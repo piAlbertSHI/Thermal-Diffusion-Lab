@@ -1,21 +1,55 @@
 # 一维热扩散实验室
 
-[打开交互演示](https://pialbertshi.github.io/Thermal-Diffusion-Lab/) · [English](README.md)
+[在线数值演示](https://pialbertshi.github.io/Thermal-Diffusion-Lab/) · [English](README.md)
 
-一根绝热细杆的左半段初温为 1，右半段为 10。接触面逐渐变平的同时，整根杆的平均温度应当保持 5.5。这个由学生课程实践扩展而来的 C++17 项目，把数值解、解析对照和离散误差放在同一个可操作的演示里。
+本项目模拟绝热细杆中的一维非稳态导热。C++17 求解器在相同网格上实现前向欧拉、后向欧拉和 Crank–Nicolson 三种时间离散格式。交互界面在同一物理时刻呈现各格式的温度分布，并提供时空温度图、定点温度记录及 CSV 导出。
 
-[![细杆在四个时刻的温度分布，以及完整的时空演化图](docs/preview.png)](https://pialbertshi.github.io/Thermal-Diffusion-Lab/)
+[![冷热分界初始条件下四个时刻的温度剖面与时空温度图](docs/preview.png)](https://pialbertshi.github.io/Thermal-Diffusion-Lab/)
 
-## 三个值得亲手做的比较
+## 计算工况
 
-1. 选择 **Hot–cold interface**，点击 **Play**。曲线显示当前温度分布，热图白线标出同一时刻。可以下载某一帧的 64 个温度值，也可以移动探针，下载某一位置的 41 帧温度记录。
-2. 切到 **Single cosine mode**，比较数值曲线与绝热边界下的余弦解析解，并读取最大绝对误差。
-3. 将 **Forward Euler** 的扩散比调到 1，观察显式格式的稳定性限制，再切换为 **Backward Euler**。在切换算法时，滑块保持同一物理时刻。
+| 初始温度场 | 温度演化 | 输出指标 |
+|---|---|---|
+| 冷热阶跃 | 左、右半杆初温分别为 1 和 10。界面温差逐渐减小，全杆平均温度保持 5.5。 | 温度剖面、最高与最低温度之差 |
+| 单一余弦模态 | 温度场保持余弦形状，振幅按指数规律衰减。 | 各单元中心数值解与解析解的最大绝对误差 |
+| 局部高斯热脉冲 | 位于杆中部的热脉冲向两端对称扩散，峰值随时间降低。 | 时空温度图、指定位置的温度历程 |
 
-## 实现与检验
+网页收录 24 组参数组合，每组在 41 个相同的物理时刻采样。空间剖面导出给定时刻的 64 个单元温度，定点探针导出所选单元的 41 个采样值。
 
-空间离散使用均匀的单元中心网格，边界面通量为零。显式欧拉要求 r = αΔt/Δx² ≤ 0.5。后向欧拉和 Crank–Nicolson 对固定三对角矩阵只做一次分解，后续每步求解的计算量与单元数成正比。示例采用模型单位。
+## 数值方法
 
-在 L = α = 1、r = 0.25、终止时刻 0.03125 的余弦算例上，从 32 个单元加密到 64 个单元，三种格式的最大误差均缩小到约四分之一。空间步长减半时，时间步长也缩小为四分之一。仓库包含 7 组 C++ 检查，并逐值核对交互演示用到的 24 组计算、62,976 个温度值。[计算结果与构建命令](README.md#verification)
+模型采用常热扩散率 $\alpha$，细杆两端为零热通量边界。默认算例取杆长 $L=20$、热扩散率 $\alpha=1$，各变量使用模型单位。空间离散采用等距单元中心有限体积法。每个内部单元面的通量对相邻两个单元的贡献大小相等、方向相反，因此离散系统守恒总热量。
 
-原课程实践探索了 C++14 的显式与隐式热方程求解。现在可直接从仓库根目录构建 C++17 求解器，另有课程源代码和报告可供对照。[原始源码](coursework/original) · [课程报告](coursework/heat-equation-report.docx)
+显式欧拉格式要求扩散比 $r=\alpha\Delta t/\Delta x^2\leq 0.5$。后向欧拉与 Crank–Nicolson 在固定网格和时间步长下复用三对角矩阵的分解，每步计算量与单元数成正比。Crank–Nicolson 在时间上具有二阶精度。面对阶跃初值，过大的时间步长仍可能引入高频振荡。
+
+## 解析验证与网格加密
+
+我选用具有闭式解的单一余弦模态，在每个单元中心核对温度。参考解为
+
+$$
+T(x,t)=5.5+4.5\cos(\pi x/L)\exp(-\alpha\pi^2t/L^2).
+$$
+
+取 $L=1$、$\alpha=1$、$r=0.25$，两套网格均推进至 $t=0.03125$。
+
+| 时间格式 | 64 单元最大绝对误差 | 32 单元与 64 单元的误差之比 |
+|---|---:|---:|
+| 前向欧拉 | 0.00010235 | 3.998 |
+| 后向欧拉 | 0.00051144 | 3.991 |
+| Crank–Nicolson | 0.00020462 | 3.994 |
+
+固定扩散比时，空间步长减半，时间步长也缩小为原来的四分之一。表中误差比反映的是空间与时间同步加密的结果。项目另设 7 组 C++ 测试，并在持续集成中重新计算、逐项核对网页使用的 62,976 个温度值。[求解器](src/solver.cpp) · [验证算例](tests/solver_checks.cpp)
+
+## 构建与输出
+
+项目需要 C++17 编译器和 CMake 3.20 或更高版本。从仓库根目录执行以下命令可构建求解器并运行测试。
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release
+ctest --test-dir build -C Release --output-on-failure
+./build/diffusion_cli --method crank-nicolson --profile step --ratio 0.5 --cells 64 --steps 128 --output profile.csv
+./build/diffusion_cli --method crank-nicolson --steps 128 --probe 4 --output trace.csv
+```
+
+使用 Visual Studio 构建时，Windows 可执行文件位于 `build\Release\diffusion_cli.exe`。`profile.csv` 保存末时刻的空间剖面，`trace.csv` 记录距 $x=4$ 最近的单元从初始状态至末步的温度。两种文件均提供位置、物理时间和温度三列。

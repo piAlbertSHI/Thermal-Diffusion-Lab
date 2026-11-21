@@ -1,48 +1,62 @@
 # Thermal Diffusion Lab
 
-[Open the interactive lab](https://pialbertshi.github.io/Thermal-Diffusion-Lab/) · [中文说明](README.zh-CN.md)
+[Interactive simulation](https://pialbertshi.github.io/Thermal-Diffusion-Lab/) · [中文说明](README.zh-CN.md)
 
-A hot and a cold half-rod meet at the midpoint. How fast does the jump disappear, and can a numerical method conserve heat as it smooths the interface? This C++17 project compares three time integrators for one-dimensional diffusion. The browser replays fields computed by the same solver that produces the command-line CSV.
+Thermal Diffusion Lab models heat conduction along a rod with insulated ends. A C++17 solver advances the same temperature field with Forward Euler, Backward Euler or Crank–Nicolson. The web interface displays the computed profiles at matched times, alongside the mean temperature, the temperature range and a fixed-position probe.
 
-[![Computed temperature profiles at four times and a space–time heat map for the insulated rod](docs/preview.png)](https://pialbertshi.github.io/Thermal-Diffusion-Lab/)
+[![Temperature profiles at four times and a space–time map of diffusion across an initially sharp interface](docs/preview.png)](https://pialbertshi.github.io/Thermal-Diffusion-Lab/)
 
-## Explore the experiment
+## Simulation cases
 
-| Try this in the lab | What to look for |
-|---|---|
-| Start with **Hot–cold interface**, then press **Play** | The jump broadens while the mean temperature stays at 5.5. Download a 64-cell profile at any frame. |
-| Choose **Single cosine mode** | The dotted analytical curve is evaluated at the same cell centres and physical time. The readout gives the largest absolute difference. |
-| Select **Forward Euler** and change the diffusion ratio to **1.00** | The solver's stability guard explains the missing run. Switch to **Backward Euler** to inspect this time step. |
+| Initial temperature field | Physical behaviour | Reported quantity |
+|---|---|---|
+| Hot–cold interface | The left and right halves start at 1 and 10. Diffusion smooths the jump while the spatial mean remains 5.5. | Temperature profile and maximum–minimum temperature difference |
+| Single cosine mode | The profile retains its shape as its amplitude decays exponentially. | Maximum absolute error against the analytical solution |
+| Local heat pulse | A Gaussian pulse spreads from the midpoint toward both insulated ends. | Space–time field and temperature history at a selected cell |
 
-The gallery contains 24 combinations of initial field, integrator and diffusion ratio, each with 41 snapshots. Their timestamps coincide so that changing schemes preserves the physical comparison time.
+The web dataset covers 24 combinations of initial field, time integrator and diffusion ratio. Each run contains 41 snapshots on the same time grid. Both the 64-cell profile at a selected time and the 41-sample history at a selected position are available as CSV.
 
 ## Numerical method
 
-For constant diffusivity α, the model is ∂T/∂t = α ∂²T/∂x² on a rod with zero heat flux at both ends. The default example uses length 20, diffusivity 1 and 64 equal cells in model units. Each cell exchanges heat with its neighbours. An outer face contributes zero flux, so internal exchanges cancel in the sum over cells.
+The model has constant diffusivity $\alpha$ and zero heat flux at each boundary.
 
-| Time integrator | Time order | Implementation |
-|---|---|---|
-| Forward Euler | 1 | Explicit stencil with r = αΔt/Δx² ≤ 0.5 |
-| Backward Euler | 1 | Tridiagonal solve evaluated at the new time |
-| Crank–Nicolson | 2 | Average of the old and new diffusive fluxes |
+$$
+\frac{\partial T}{\partial t}=\alpha\frac{\partial^2 T}{\partial x^2},
+\qquad
+\frac{\partial T}{\partial x}(0,t)=\frac{\partial T}{\partial x}(L,t)=0.
+$$
 
-Both implicit schemes factor the constant tridiagonal matrix once. Each time step uses O(N) work and storage. Unconditional linear stability still permits time-discretization error. Crank–Nicolson can retain oscillatory high-frequency components at large time steps.
+The default rod has length 20 and diffusivity 1 in model units. A cell-centred finite-volume discretization uses equal and opposite fluxes across each internal face. These contributions cancel when summed over the grid, conserving the spatial mean.
+
+| Time integrator | Temporal order | Update |
+|---|---:|---|
+| Forward Euler | 1 | Explicit update with diffusion ratio $r=\alpha\Delta t/\Delta x^2 \le 0.5$ |
+| Backward Euler | 1 | Implicit tridiagonal solve using end-of-step fluxes |
+| Crank–Nicolson | 2 | Implicit tridiagonal solve using the average of the initial and final fluxes within the time step |
+
+Both implicit schemes factor the constant tridiagonal matrix once. Each step takes $O(N)$ work and storage for $N$ cells. Crank–Nicolson is linearly stable for large steps, although sharp initial gradients can produce high-frequency oscillations.
 
 ## Verification
 
-The smooth reference is T(x,t) = 5.5 + 4.5 cos(πx/L) exp(−απ²t/L²). This refinement check uses L = α = 1, r = 0.25 and final time 0.03125. The 32- and 64-cell runs end at exactly the same time. Errors are measured against the continuum solution at cell centres.
+I use a single cosine mode to check the solution at every cell centre. Its closed-form temperature is
 
-| Scheme | Maximum absolute error, 64 cells | Error at 32 cells / error at 64 |
+$$
+T(x,t)=5.5+4.5\cos(\pi x/L)\exp(-\alpha\pi^2 t/L^2).
+$$
+
+The refinement test uses $L=1$, $\alpha=1$, $r=0.25$ and final time $t=0.03125$ on both grids.
+
+| Scheme | Maximum absolute error on 64 cells | Error ratio, 32 cells to 64 |
 |---|---:|---:|
 | Forward Euler | 0.00010235 | 3.998 |
 | Backward Euler | 0.00051144 | 3.991 |
 | Crank–Nicolson | 0.00020462 | 3.994 |
 
-Halving the cell width also quarters the time step in this experiment. The ratios measure the combined grid-and-time refinement. Seven native checks cover conservation, symmetry, the analytical reference, refinement, a discrete eigenmode, stability and input handling. CI regenerates all 62,976 browser temperature samples and compares them with the checked-in data.
+Halving the cell width at fixed $r$ also quarters the time step. The approximately fourfold reduction in error therefore measures combined spatial and temporal refinement. Seven native test groups cover conservation, symmetry, the analytical solution, refinement, a discrete eigenmode, stability and input handling. Continuous integration reruns the solver and checks all 62,976 temperatures published in the web dataset. [Solver implementation](src/solver.cpp) · [Verification cases](tests/solver_checks.cpp)
 
 ## Build and run
 
-Use a C++17 compiler and CMake 3.20 or newer. From the repository root:
+The project requires a C++17 compiler and CMake 3.20 or newer.
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
@@ -52,19 +66,13 @@ ctest --test-dir build -C Release --output-on-failure
 ./build/diffusion_cli --method crank-nicolson --steps 128 --probe 4 --output trace.csv
 ```
 
-With Visual Studio on Windows the executable is `build\Release\diffusion_cli.exe`. `--steps` counts time steps. The CLI reports the physical time alongside the cell-centre coordinate and temperature. Run `--help` for all options.
+With Visual Studio on Windows, the executable is `build\Release\diffusion_cli.exe`. The first command-line example exports the final temperature profile. The second records the cell nearest $x=4$ after each step, including the initial state. Both CSV files include the cell-centre coordinate, physical time and temperature.
 
-The probe follows the cell nearest x = 4 (20% of the rod) from step zero through the final step. The browser offers a separate 41-frame probe export beneath the heat map.
-
-To rebuild the web data and serve the lab locally:
+To regenerate and serve the web dataset locally, run the following commands from the repository root.
 
 ```sh
 ./build/diffusion_cli --gallery docs/data/profiles.json
 python -m http.server 8000 --directory docs
 ```
 
-Open `http://localhost:8000`. The native solver has no Python dependency. The optional [figure script](tools/render_preview.py) uses Matplotlib to regenerate the figure above.
-
-## Coursework and development
-
-This began as a student numerical-methods project comparing explicit and implicit heat-equation solvers in C++14. The original split-temperature example and insulated rod motivated the current model. The revised implementation uses a common conservative spatial operator, adds Crank–Nicolson, and makes time, stability and numerical error observable. The [original source](coursework/original), [course report](coursework/heat-equation-report.docx) and [historical repository snapshot](https://github.com/piAlbertSHI/Thermal-Diffusion-Lab/tree/4530ba4a7494b1f4ff3b78ca107ece2a44bae7a0) preserve the submitted work.
+The local viewer is available at `http://localhost:8000`. The project figure is generated from the same dataset with Matplotlib. [Figure script](tools/render_preview.py)

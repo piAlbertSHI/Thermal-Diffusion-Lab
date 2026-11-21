@@ -125,7 +125,7 @@ function render() {
     const { ctx, width, height } = surface(plot);
     ctx.fillStyle = '#e4efec';
     ctx.textAlign = 'center';
-    ctx.fillText('Choose r ≤ 0.5 or an implicit integrator.', width / 2, height / 2);
+    ctx.fillText('Forward Euler requires r ≤ 0.5.', width / 2, height / 2);
     surface(history);
     return;
   }

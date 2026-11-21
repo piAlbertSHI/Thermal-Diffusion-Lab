@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta
       name="description"
-      content="Explore one-dimensional heat diffusion in an insulated rod using three finite-difference time integrators."
+      content="One-dimensional heat diffusion on a cell-centred grid, with three time integrators, analytical verification and temperature-probe histories."
     />
     <title>Thermal Diffusion Lab · piAlbertSHI</title>
     <link rel="icon" href="data:," />
@@ -20,8 +20,8 @@
       <header>
         <h1>Thermal Diffusion Lab</h1>
         <p>
-          Bring two temperatures into contact. Follow the heat along an insulated rod and compare
-          three ways to advance the same diffusion equation.
+          Three time integrators compute heat diffusion along an insulated rod. Temperature
+          profiles and probe histories share the same 64-cell grid and physical time scale.
         </p>
       </header>
       <main>
@@ -68,7 +68,7 @@
             </dl>
           </section>
           <aside>
-            <h2>Experiment</h2>
+            <h2>Simulation parameters</h2>
             <label for="profile">Initial temperature</label
             ><select id="profile">
               <option value="step">Hot–cold interface</option>
@@ -98,8 +98,9 @@
           <div>
             <h2>Space–time history</h2>
             <p>
-              Time runs downward. Blue marks cooler cells and amber marks warmer cells. The
-              horizontal line marks the selected time. Move the probe to export one cell’s history.
+              Time increases downward, with cooler cells in blue and warmer cells in amber. The
+              horizontal line identifies the selected profile. The vertical line marks the probe
+              position for the time-history export.
             </p>
             <label for="probe" id="probe-label">Probe position</label
             ><input id="probe" type="range" min="0" max="63" value="12" /><button
@@ -118,7 +119,7 @@
         </section>
       </main>
       <footer>
-        <span>Coursework revisited · C++17 · 64-cell insulated rod</span
+        <span>C++17 solver · Cell-centred finite volumes</span
         ><a href="https://github.com/piAlbertSHI/Thermal-Diffusion-Lab#numerical-method"
           >Numerical method and verification ↗</a
         >
