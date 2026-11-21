@@ -1,0 +1,5 @@
+/build/
+/out/
+/profile.csv
+cmake-build-*/
+.DS_Store

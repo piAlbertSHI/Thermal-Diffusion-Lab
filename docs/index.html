@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="Explore one-dimensional heat diffusion in an insulated rod using three finite-difference time integrators."
+    />
+    <title>Thermal Diffusion Lab · piAlbertSHI</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <nav aria-label="Project">
+        <a href="https://github.com/piAlbertSHI">piAlbertSHI</a><span>/</span><span>Numerical methods</span
+        ><a href="https://github.com/piAlbertSHI/Thermal-Diffusion-Lab">Repository ↗</a>
+      </nav>
+      <header>
+        <h1>Thermal Diffusion Lab</h1>
+        <p>
+          Bring two temperatures into contact. Follow the heat along an insulated rod and compare
+          three ways to advance the same diffusion equation.
+        </p>
+      </header>
+      <main>
+        <div class="lab">
+          <section class="figure" aria-labelledby="chart-title">
+            <div class="figure-head">
+              <h2 id="chart-title">Temperature along the rod</h2>
+              <div class="legend">
+                <span class="key" style="--swatch: #ffb776">Selected time</span
+                ><span class="key" style="--swatch: #88b4bc">Initial</span
+                ><span class="key" id="exact-key" style="--swatch: #d7eeb0" hidden>Analytical</span>
+              </div>
+            </div>
+            <canvas
+              id="plot"
+              role="img"
+              aria-label="Initial and current temperatures along the insulated rod. Summary values appear below."
+            ></canvas>
+            <div class="timeline">
+              <button id="play" type="button" disabled>Play</button
+              ><input
+                id="frame"
+                type="range"
+                min="0"
+                max="40"
+                value="12"
+                aria-label="Time frame"
+                disabled
+              /><label for="frame" id="frame-label">Time</label>
+            </div>
+            <dl class="metrics">
+              <div>
+                <dt>Elapsed time</dt>
+                <dd id="time">—</dd>
+              </div>
+              <div>
+                <dt>Mean temperature</dt>
+                <dd id="mean">—</dd>
+              </div>
+              <div>
+                <dt id="metric-title">Temperature span</dt>
+                <dd id="span">—</dd>
+              </div>
+            </dl>
+          </section>
+          <aside>
+            <h2>Experiment</h2>
+            <label for="profile">Initial temperature</label
+            ><select id="profile">
+              <option value="step">Hot–cold interface</option>
+              <option value="cosine">Single cosine mode</option>
+              <option value="pulse">Local heat pulse</option>
+            </select>
+            <label for="method">Time integrator</label
+            ><select id="method">
+              <option value="forward-euler">Forward Euler</option>
+              <option value="backward-euler">Backward Euler</option>
+              <option value="crank-nicolson" selected>Crank–Nicolson</option>
+            </select>
+            <label for="ratio">Diffusion ratio · αΔt / Δx²</label
+            ><select id="ratio">
+              <option value="0.25">0.25</option>
+              <option value="0.5" selected>0.50</option>
+              <option value="1">1.00</option>
+            </select>
+            <p class="note" id="scheme-note"></p>
+            <p class="notice" role="status" id="notice" hidden></p>
+            <button id="download" class="primary" type="button" disabled>
+              Download profile CSV ↓
+            </button>
+          </aside>
+        </div>
+        <section class="sub">
+          <div>
+            <h2>Space–time history</h2>
+            <p>
+              Time runs downward. Blue marks cooler cells and amber marks warmer cells. The
+              horizontal line marks the selected time. Move the probe to export one cell’s history.
+            </p>
+            <label for="probe" id="probe-label">Probe position</label
+            ><input id="probe" type="range" min="0" max="63" value="12" /><button
+              id="probe-download"
+              type="button"
+              disabled
+            >
+              Download probe history ↓
+            </button>
+          </div>
+          <canvas
+            id="history"
+            role="img"
+            aria-label="Space–time heat map with cursors for time and probe position"
+          ></canvas>
+        </section>
+      </main>
+      <footer>
+        <span>Coursework revisited · C++17 · 64-cell insulated rod</span
+        ><a href="https://github.com/piAlbertSHI/Thermal-Diffusion-Lab#numerical-method"
+          >Numerical method and verification ↗</a
+        >
+      </footer>
+    </div>
+    <script type="module" src="lab.mjs"></script>
+  </body>
+</html>
